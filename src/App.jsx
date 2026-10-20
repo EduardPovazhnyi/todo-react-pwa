@@ -73,23 +73,57 @@ function App(props) {
     setTasks(editedTaskList);
   }
 
-  function locateTask(id, location) {
-  console.log("Locating task:", id, location);
+  async function locateTask(id, location) {
+  let city = "Unknown location";
+
+  if (
+    typeof location.latitude === "number" &&
+    typeof location.longitude === "number"
+  ) {
+    try {
+      console.log("START GEOCODING:", location.latitude, location.longitude);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${location.latitude}&lon=${location.longitude}&zoom=14&addressdetails=1`
+      );
+
+      if (!response.ok) {
+        throw new Error("Geocoding request failed");
+      }
+
+      const data = await response.json();
+
+      console.log("GEOCODING RESULT:", data.address);
+
+      city =
+        data.address?.city ||
+        data.address?.town ||
+        data.address?.village ||
+        data.address?.municipality ||
+        "Unknown location";
+
+      console.log("CITY SELECTED:", city);
+    } catch (error) {
+      console.error("Reverse geocoding failed:", error);
+    }
+  }
 
   setTasks((previousTasks) =>
     previousTasks.map((task) =>
-      task.id === id ? { ...task, location: location } : task
+      task.id === id
+        ? { ...task, location: { ...location, city } }
+        : task
     )
   );
 }
 
 function geoFindMe(id) {
   if (!navigator.geolocation) {
-    locateTask(id, {
-      latitude: "##",
-      longitude: "##",
-      error: "Geolocation is not supported by your browser",
-    });
+  locateTask(id, {
+    latitude: "##",
+    longitude: "##",
+    city: "",
+    error: "Geolocation is not supported by your browser",
+  });
     return;
   }
 
@@ -124,6 +158,7 @@ function geoFindMe(id) {
         editTask={editTask}
         latitude={task.location?.latitude}
         longitude={task.location?.longitude}
+        city={task.location?.city}
       />
     ));
 

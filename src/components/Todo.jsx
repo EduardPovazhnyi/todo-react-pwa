@@ -73,8 +73,15 @@ function Todo(props) {
         />
         <label className="todo-label" htmlFor={props.id}>
           {props.name}
-          &nbsp;| la {props.latitude}
-          &nbsp;| lo {props.longitude}
+          {props.city ? (
+            <span> | 📍 {props.city}</span>
+          ) : typeof props.latitude === "number" &&
+          typeof props.longitude === "number" ? (
+            <span>
+              {" | la "}{props.latitude}
+              {" | lo "}{props.longitude}
+            </span>
+          ) : null}
         </label>
       </div>
       <div className="btn-group">
