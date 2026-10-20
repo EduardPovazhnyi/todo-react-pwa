@@ -35,6 +35,12 @@ function App(props) {
   }
   const [tasks, setTasks] = usePersistedState("tasks", props.tasks);
   const [filter, setFilter] = useState("All");
+  const [lastInsertedId, setLastInsertedId] = useState("");
+  useEffect(() => {
+  if (lastInsertedId) {
+    geoFindMe(lastInsertedId);
+  }
+}, [lastInsertedId]);
 
   function toggleTaskCompleted(id) {
     const updatedTasks = tasks.map((task) => {
@@ -67,6 +73,44 @@ function App(props) {
     setTasks(editedTaskList);
   }
 
+  function locateTask(id, location) {
+  console.log("Locating task:", id, location);
+
+  setTasks((previousTasks) =>
+    previousTasks.map((task) =>
+      task.id === id ? { ...task, location: location } : task
+    )
+  );
+}
+
+function geoFindMe(id) {
+  if (!navigator.geolocation) {
+    locateTask(id, {
+      latitude: "##",
+      longitude: "##",
+      error: "Geolocation is not supported by your browser",
+    });
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      locateTask(id, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        error: "",
+      });
+    },
+    (error) => {
+      locateTask(id, {
+        latitude: "##",
+        longitude: "##",
+        error: error.message,
+      });
+    }
+  );
+}
+
   const taskList = tasks
     ?.filter(FILTER_MAP[filter])
     .map((task) => (
@@ -78,6 +122,8 @@ function App(props) {
         toggleTaskCompleted={toggleTaskCompleted}
         deleteTask={deleteTask}
         editTask={editTask}
+        latitude={task.location?.latitude}
+        longitude={task.location?.longitude}
       />
     ));
 
@@ -91,9 +137,22 @@ function App(props) {
   ));
 
   function addTask(name) {
-    const newTask = { id: "todo-" + nanoid(), name: name, completed: false };
-    setTasks([...tasks, newTask]);
-  }
+  const id = "todo-" + nanoid();
+
+  const newTask = {
+    id: id,
+    name: name,
+    completed: false,
+    location: {
+      latitude: "##",
+      longitude: "##",
+      error: "##",
+    },
+  };
+
+  setLastInsertedId(id);
+  setTasks((previousTasks) => [...previousTasks, newTask]);
+}
 
   const tasksNoun = taskList.length !== 1 ? "tasks" : "task";
   const headingText = `${taskList.length} ${tasksNoun} remaining`;
