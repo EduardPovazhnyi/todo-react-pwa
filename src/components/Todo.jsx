@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import WebcamCapture from "./WebcamCapture";
+import ViewPhoto from "./ViewPhoto";
+import { usePhotoSrc } from "../db";
 
 function usePrevious(value) {
   const ref = useRef(null);
@@ -11,6 +14,11 @@ function usePrevious(value) {
 function Todo(props) {
   const [isEditing, setEditing] = useState(false);
   const [newName, setNewName] = useState("");
+
+  const [showCamera, setShowCamera] = useState(false);
+  const [showPhoto, setShowPhoto] = useState(false);
+
+  const photoSrc = usePhotoSrc(props.id);
 
   const editFieldRef = useRef(null);
   const editButtonRef = useRef(null);
@@ -68,7 +76,8 @@ function Todo(props) {
         <input
           id={props.id}
           type="checkbox"
-          defaultChecked={props.completed}
+          //defaultChecked={props.completed}
+          checked={props.completed}
           onChange={() => props.toggleTaskCompleted(props.id)}
         />
         <label className="todo-label" htmlFor={props.id}>
@@ -101,7 +110,43 @@ function Todo(props) {
           Delete <span className="visually-hidden">{props.name}</span>
         </button>
       </div>
+      <div className="btn-group">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => setShowCamera(true)}
+      >
+        Take Photo
+      </button>
+
+      <button
+        type="button"
+        className="btn"
+        onClick={() => setShowPhoto(true)}
+        disabled={!photoSrc}
+      >
+        View Photo
+      </button>
     </div>
+
+    {showCamera && (
+      <div className="photo-panel">
+        <WebcamCapture
+          taskId={props.id}
+          onClose={() => setShowCamera(false)}
+        />
+      </div>
+    )}
+
+    {showPhoto && (
+      <div className="photo-panel">
+        <ViewPhoto
+          taskId={props.id}
+          onClose={() => setShowPhoto(false)}
+        />
+      </div>
+    )}
+    </div>    
   );
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "todom atic-pwa-v2".replace(" ", "");
+const CACHE_NAME = "todomatic-pwa-v3";
 
 const APP_FILES = [
   "/",
@@ -37,9 +37,23 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
+  // Network First: try to get the latest version
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request);
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok && new URL(event.request.url).origin === self.location.origin) {
+          const responseClone = response.clone();
+
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+
+        return response;
+      })
+      .catch(() => {
+        // Offline fallback: use cached files
+        return caches.match(event.request);
+      })
   );
 });
