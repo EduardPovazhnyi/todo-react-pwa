@@ -78,6 +78,16 @@ function runTests() {
   return result.ok ? { ok: true } : { ok: false, reason: "tests failed" };
 }
 
+function lintCode() {
+  log("Tool: lintCode()");
+
+  const result = run("npx eslint src");
+
+  return result.ok
+    ? { ok: true }
+    : { ok: false, reason: "lint errors" };
+}
+
 function buildApp() {
   log("Tool: buildApp()");
   // Pull the project's settings from Vercel, then build ON THIS RUNNER, so the
@@ -165,7 +175,7 @@ async function runAgent() {
   }
 
   // OBSERVE -> DECIDE -> ACT, one gate at a time.
-  for (const tool of [runTests, buildApp, checkPWA]) {
+  for (const tool of [runTests, lintCode, buildApp, checkPWA]) {
     const result = tool();
     if (!result.ok) {
       notify(`Blocked: ${result.reason}. Nothing was deployed.`);
