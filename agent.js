@@ -57,7 +57,7 @@ function run(command, extraEnv = {}) {
 }
 
 function vercel(args) {
-  return run(`vercel ${args} --token=${VERCEL_TOKEN}`);
+  return run(`vercel ${args} --scope=${process.env.VERCEL_ORG_ID} --token=${VERCEL_TOKEN}`);
 }
 
 // ---------------------------------------------------------------------------
