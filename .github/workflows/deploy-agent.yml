@@ -32,3 +32,13 @@ jobs:
       - run: npm install --global vercel@latest
       - name: Run deployment agent
         run: node agent.js
+        
+      - name: Upload deployment history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-history
+          path: deployment-history.json
+          if-no-files-found: warn
+          retention-days: 30
+

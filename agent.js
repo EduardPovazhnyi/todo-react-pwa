@@ -68,6 +68,39 @@ function notify(message) {
   log(`NOTIFY: ${message}`);
 }
 
+function recordDeployment(outcome, healthy) {
+  log(`Tool: recordDeployment(${outcome})`);
+
+  const historyFile = path.join(__dirname, "deployment-history.json");
+
+  try {
+    let history = [];
+
+    if (fs.existsSync(historyFile)) {
+      history = JSON.parse(fs.readFileSync(historyFile, "utf8"));
+      if (!Array.isArray(history)) {
+        return { ok: false, reason: "Invalid deployment history format" };
+      }
+    }
+
+    history.push({
+      timestamp: new Date().toISOString(),
+      commitSHA: process.env.GITHUB_SHA || "local",
+      outcome,
+      healthy
+    });
+
+    fs.writeFileSync(
+      historyFile,
+      JSON.stringify(history, null, 2) + "\n"
+    );
+
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+}
+
 function runTests() {
   log("Tool: runTests()");
   // --watchAll=false stops Jest waiting for input; --passWithNoTests stops an
@@ -235,14 +268,28 @@ log(`Currently live: ${previous.id}`);
   return "ROLLED_BACK";
 }
 
+
 runAgent()
   .then((outcome) => {
+    const healthy = outcome === "SUCCESS" || outcome === "ROLLED_BACK";
+
+    const recorded = recordDeployment(outcome, healthy);
+
+    if (!recorded.ok) {
+      log(`WARNING: Could not record deployment history: ${recorded.reason}`);
+    }
+
     log(`=== Agent finished: ${outcome} ===`);
-    // Anything other than SUCCESS turns the Actions run red, so a human notices.
+
+    // Anything other than SUCCESS turns the Actions run red.
     process.exit(outcome === "SUCCESS" ? 0 : 1);
   })
   .catch((err) => {
     log(`Unexpected error: ${err.stack || err}`);
+
+    recordDeployment("ERROR", false);
+
     log("=== Agent finished: ERROR ===");
     process.exit(1);
   });
+
