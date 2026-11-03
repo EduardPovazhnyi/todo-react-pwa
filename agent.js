@@ -183,8 +183,17 @@ async function runAgent() {
     }
   }
 
-  const previous = getCurrentProduction(); // remember what to roll back to
-  if (previous.ok) log(`Currently live: ${previous.id}`);
+  //const previous = getCurrentProduction(); // remember what to roll back to
+  //if (previous.ok) log(`Currently live: ${previous.id}`);
+
+  const previous = getCurrentProduction();
+
+  if (!previous.ok) {
+  notify("Blocked: cannot identify previous production deployment. Nothing was deployed.");
+  return "BLOCKED";
+  }
+
+log(`Currently live: ${previous.id}`);
 
   const deployment = deploy();
   if (!deployment.ok) {
